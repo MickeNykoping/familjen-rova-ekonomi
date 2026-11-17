@@ -1,279 +1,61 @@
-import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabase";
-
 import DashboardCards from "./components/DashboardCards";
 import BudgetList from "./components/BudgetList";
 import BudgetForm from "./components/BudgetForm";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
 
+import { useAppData } from "./hooks/useAppData";
+
 import "./App.css";
 
 function App() {
-  const [householdName, setHouseholdName] = useState("");
-
-  const [budget, setBudget] = useState(0);
-  const [expense, setExpense] = useState(0);
-
-  const [transactions, setTransactions] = useState([]);
-  const [budgets, setBudgets] = useState([]);
-  const [categories, setCategories] = useState([]);
-
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-
-  const [editingId, setEditingId] = useState(null);
-
-  const [editingBudget, setEditingBudget] = useState(null);
-  const [budgetAmount, setBudgetAmount] = useState("");
-
-  async function loadData() {
-    const { data: householdData } = await supabase
-      .from("households")
-      .select("*")
-      .limit(1);
-
-    if (householdData?.length > 0) {
-      setHouseholdName(householdData[0].name);
-    }
-
-    const { data: categoryData } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-
-    if (categoryData) {
-      setCategories(categoryData);
-
-      if (!selectedCategory && categoryData.length > 0) {
-        setSelectedCategory(categoryData[0].id);
-      }
-    }
-
-    const { data: budgetData } = await supabase
-      .from("budgets")
-      .select("*");
-
-    if (budgetData) {
-      const budgetsWithNames = budgetData.map(
-        (budgetRow) => {
-          const category =
-            categoryData?.find(
-              (c) =>
-                c.id ===
-                budgetRow.category_id
-            );
-
-          return {
-            ...budgetRow,
-            categoryName:
-              category?.name ||
-              "Okänd kategori",
-          };
-        }
-      );
-
-      setBudgets(budgetsWithNames);
-
-      const totalBudget = budgetData.reduce(
-        (sum, row) =>
-          sum + Number(row.amount),
-        0
-      );
-
-      setBudget(totalBudget);
-    }
-
-    const { data: transactionData } =
-      await supabase
-        .from("transactions")
-        .select("*")
-        .order("transaction_date", {
-          ascending: false,
-        });
-
-    if (transactionData) {
-      setTransactions(transactionData);
-
-      const totalExpense =
-        transactionData.reduce(
-          (sum, row) =>
-            sum + Number(row.amount),
-          0
-        );
-
-      setExpense(totalExpense);
-    }
-  }
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function saveTransaction() {
-    if (
-      !description ||
-      !amount ||
-      !selectedCategory
-    ) {
-      return;
-    }
-
-    if (editingId) {
-      await supabase
-        .from("transactions")
-        .update({
-          description,
-          amount: Number(amount),
-          category_id:
-            selectedCategory,
-        })
-        .eq("id", editingId);
-    } else {
-      await supabase
-        .from("transactions")
-        .insert([
-          {
-            household_id:
-              "8b8621eb-0f2d-49fc-be1f-8338370a73a7",
-            category_id:
-              selectedCategory,
-            transaction_date:
-              new Date()
-                .toISOString()
-                .split("T")[0],
-            amount: Number(amount),
-            description,
-          },
-        ]);
-    }
-
-    clearForm();
-    loadData();
-  }
-
-  function editTransaction(
-    transaction
-  ) {
-    setEditingId(transaction.id);
-    setDescription(
-      transaction.description
-    );
-    setAmount(transaction.amount);
-    setSelectedCategory(
-      transaction.category_id
-    );
-  }
-
-  function clearForm() {
-    setEditingId(null);
-    setDescription("");
-    setAmount("");
-  }
-
-  async function deleteTransaction(
-    id
-  ) {
-    await supabase
-      .from("transactions")
-      .delete()
-      .eq("id", id);
-
-    loadData();
-  }
-
-  function editBudget(budget) {
-    setEditingBudget(budget);
-    setBudgetAmount(budget.amount);
-  }
-
-  function cancelBudgetEdit() {
-    setEditingBudget(null);
-    setBudgetAmount("");
-  }
-
-  async function saveBudget() {
-    if (!editingBudget) return;
-
-    await supabase
-      .from("budgets")
-      .update({
-        amount:
-          Number(budgetAmount),
-      })
-      .eq("id", editingBudget.id);
-
-    cancelBudgetEdit();
-    loadData();
-  }
-
-  const remaining =
-    budget - expense;
+  const app = useAppData();
 
   return (
     <div className="dashboard">
-      <h1>{householdName}</h1>
+      <h1>{app.householdName}</h1>
 
       <DashboardCards
-        budget={budget}
-        expense={expense}
-        remaining={remaining}
+        budget={app.budget}
+        expense={app.expense}
+        remaining={app.remaining}
       />
 
       <BudgetList
-        budgets={budgets}
-        editBudget={editBudget}
+        budgets={app.budgets}
+        editBudget={app.editBudget}
       />
 
       <BudgetForm
-        editingBudget={
-          editingBudget
-        }
-        budgetAmount={
-          budgetAmount
-        }
-        setBudgetAmount={
-          setBudgetAmount
-        }
-        saveBudget={saveBudget}
-        cancelBudgetEdit={
-          cancelBudgetEdit
-        }
+        editingBudget={app.editingBudget}
+        budgetAmount={app.budgetAmount}
+        setBudgetAmount={app.setBudgetAmount}
+        saveBudget={app.saveBudget}
+        cancelBudgetEdit={app.cancelBudgetEdit}
       />
 
       <TransactionForm
-        editingId={editingId}
-        description={
-          description
-        }
-        setDescription={
-          setDescription
-        }
-        amount={amount}
-        setAmount={setAmount}
-        selectedCategory={
-          selectedCategory
-        }
+        editingId={app.editingId}
+        description={app.description}
+        setDescription={app.setDescription}
+        amount={app.amount}
+        setAmount={app.setAmount}
+        selectedCategory={app.selectedCategory}
         setSelectedCategory={
-          setSelectedCategory
+          app.setSelectedCategory
         }
-        categories={categories}
-        saveTransaction={
-          saveTransaction
-        }
-        clearForm={clearForm}
+        categories={app.categories}
+        saveTransaction={app.saveTransaction}
+        clearForm={app.clearForm}
       />
 
       <TransactionList
-        transactions={
-          transactions
-        }
+        transactions={app.transactions}
         editTransaction={
-          editTransaction
+          app.editTransaction
         }
         deleteTransaction={
-          deleteTransaction
+          app.deleteTransaction
         }
       />
     </div>
