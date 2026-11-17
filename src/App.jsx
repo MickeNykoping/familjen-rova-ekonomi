@@ -1,8 +1,10 @@
 import DashboardCards from "./components/DashboardCards";
 import BudgetList from "./components/BudgetList";
 import BudgetForm from "./components/BudgetForm";
+import BudgetSummary from "./components/BudgetSummary";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
+import LopandeUtgifter from "./components/LopandeUtgifter";
 
 import { useAppData } from "./hooks/useAppData";
 
@@ -21,6 +23,8 @@ function App() {
         remaining={app.remaining}
       />
 
+      <LopandeUtgifter />
+
       <BudgetList
         budgets={app.budgets}
         editBudget={app.editBudget}
@@ -34,6 +38,12 @@ function App() {
         cancelBudgetEdit={app.cancelBudgetEdit}
       />
 
+      <BudgetSummary
+        categories={app.categories}
+        budgets={app.budgets}
+        transactions={app.transactions}
+      />
+
       <TransactionForm
         editingId={app.editingId}
         description={app.description}
@@ -41,9 +51,7 @@ function App() {
         amount={app.amount}
         setAmount={app.setAmount}
         selectedCategory={app.selectedCategory}
-        setSelectedCategory={
-          app.setSelectedCategory
-        }
+        setSelectedCategory={app.setSelectedCategory}
         categories={app.categories}
         saveTransaction={app.saveTransaction}
         clearForm={app.clearForm}
@@ -51,12 +59,8 @@ function App() {
 
       <TransactionList
         transactions={app.transactions}
-        editTransaction={
-          app.editTransaction
-        }
-        deleteTransaction={
-          app.deleteTransaction
-        }
+        editTransaction={app.editTransaction}
+        deleteTransaction={app.deleteTransaction}
       />
     </div>
   );
