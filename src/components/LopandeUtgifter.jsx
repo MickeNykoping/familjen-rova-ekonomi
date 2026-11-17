@@ -3,50 +3,71 @@ import { supabase } from "../lib/supabase";
 
 function LopandeUtgifter() {
   const [rows, setRows] = useState([]);
+  const [monthlyExpenses, setMonthlyExpenses] =
+    useState([]);
 
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Maj",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Dec",
+    1, 2, 3, 4, 5, 6,
+    7, 8, 9, 10, 11, 12,
   ];
 
+  const monthNames = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "Maj",
+    6: "Jun",
+    7: "Jul",
+    8: "Aug",
+    9: "Sep",
+    10: "Okt",
+    11: "Nov",
+    12: "Dec",
+  };
+
   useEffect(() => {
-    loadRows();
+    loadData();
   }, []);
 
-  async function loadRows() {
-    const { data } = await supabase
-      .from("expense_rows")
-      .select("*")
-      .order("expense_group")
-      .order("sort_order");
+  async function loadData() {
+    const { data: rowsData } =
+      await supabase
+        .from("expense_rows")
+        .select("*")
+        .order("sort_order");
 
-    if (data) {
-      setRows(data);
+    const { data: expenseData } =
+      await supabase
+        .from("monthly_expenses")
+        .select("*");
+
+    if (rowsData) {
+      setRows(rowsData);
+    }
+
+    if (expenseData) {
+      setMonthlyExpenses(expenseData);
     }
   }
-
-  let currentGroup = "";
 
   return (
     <div
       className="card"
-      style={{ marginTop: "20px" }}
+      style={{
+        marginTop: "20px",
+      }}
     >
       <h2>Löpande utgifter 2026</h2>
 
-      <div style={{ overflowX: "auto" }}>
+      <div
+        style={{
+          overflowX: "auto",
+        }}
+      >
         <table
           style={{
+            minWidth: "1350px",
             width: "100%",
             borderCollapse: "collapse",
           }}
@@ -56,6 +77,7 @@ function LopandeUtgifter() {
               <th
                 style={{
                   textAlign: "left",
+                  padding: "10px",
                   minWidth: "250px",
                 }}
               >
@@ -63,63 +85,117 @@ function LopandeUtgifter() {
               </th>
 
               {months.map((month) => (
-                <th key={month}>
-                  {month}
+                <th
+                  key={month}
+                  style={{
+                    minWidth: "70px",
+                    padding: "10px",
+                  }}
+                >
+                  {monthNames[month]}
                 </th>
               ))}
+
+              <th
+                style={{
+                  minWidth: "100px",
+                  padding: "10px",
+                  background:
+                    "#f3f3f3",
+                }}
+              >
+                År
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {rows.map((row) => {
-              const showGroup =
-                row.expense_group !== currentGroup;
-
-              if (showGroup) {
-                currentGroup =
-                  row.expense_group;
-              }
+              const yearlyTotal =
+                monthlyExpenses
+                  .filter(
+                    (e) =>
+                      e.expense_name ===
+                      row.name
+                  )
+                  .reduce(
+                    (sum, e) =>
+                      sum +
+                      Number(
+                        e.amount
+                      ),
+                    0
+                  );
 
               return (
-                <>
-                  {showGroup && (
-                    <tr
-                      key={
-                        row.expense_group
-                      }
-                    >
-                      <td
-                        colSpan={13}
-                        style={{
-                          fontWeight:
-                            "bold",
-                          background:
-                            "#f0f0f0",
-                          padding:
-                            "10px",
-                        }}
-                      >
-                        {
-                          row.expense_group
-                        }
-                      </td>
-                    </tr>
+                <tr key={row.id}>
+                  <td
+                    style={{
+                      padding:
+                        "8px",
+                      textAlign:
+                        "left",
+                      borderBottom:
+                        "1px solid #ddd",
+                    }}
+                  >
+                    {row.name}
+                  </td>
+
+                  {months.map(
+                    (month) => {
+                      const expense =
+                        monthlyExpenses.find(
+                          (e) =>
+                            e.expense_name ===
+                              row.name &&
+                            e.month ===
+                              month
+                        );
+
+                      return (
+                        <td
+                          key={
+                            month
+                          }
+                          style={{
+                            textAlign:
+                              "center",
+                            borderBottom:
+                              "1px solid #ddd",
+                          }}
+                        >
+                          {expense
+                            ? Number(
+                                expense.amount
+                              ).toLocaleString(
+                                "sv-SE"
+                              )
+                            : "-"}
+                        </td>
+                      );
+                    }
                   )}
 
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-
-                    {months.map(
-                      (month) => (
-                        <td
-                          key={month}
-                        >
-                          0
-                        </td>
-                      )
+                  <td
+                    style={{
+                      textAlign:
+                        "right",
+                      fontWeight:
+                        "bold",
+                      background:
+                        "#fafafa",
+                      borderBottom:
+                        "1px solid #ddd",
+                      padding:
+                        "8px",
+                    }}
+                  >
+                    {yearlyTotal.toLocaleString(
+                      "sv-SE"
                     )}
-                  </tr>
-                </>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
