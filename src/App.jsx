@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 
 import DashboardCards from "./components/DashboardCards";
+import BudgetList from "./components/BudgetList";
+import BudgetForm from "./components/BudgetForm";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
-import BudgetList from "./components/BudgetList";
 
 import "./App.css";
 
 function App() {
   const [householdName, setHouseholdName] = useState("");
+
   const [budget, setBudget] = useState(0);
   const [expense, setExpense] = useState(0);
 
@@ -22,6 +24,9 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
 
   const [editingId, setEditingId] = useState(null);
+
+  const [editingBudget, setEditingBudget] = useState(null);
+  const [budgetAmount, setBudgetAmount] = useState("");
 
   async function loadData() {
     const { data: householdData } = await supabase
@@ -51,41 +56,52 @@ function App() {
       .select("*");
 
     if (budgetData) {
-      const budgetsWithNames = budgetData.map((budgetRow) => {
-        const category = categoryData?.find(
-          (c) => c.id === budgetRow.category_id
-        );
+      const budgetsWithNames = budgetData.map(
+        (budgetRow) => {
+          const category =
+            categoryData?.find(
+              (c) =>
+                c.id ===
+                budgetRow.category_id
+            );
 
-        return {
-          ...budgetRow,
-          categoryName: category?.name || "Okänd kategori",
-        };
-      });
+          return {
+            ...budgetRow,
+            categoryName:
+              category?.name ||
+              "Okänd kategori",
+          };
+        }
+      );
 
       setBudgets(budgetsWithNames);
 
       const totalBudget = budgetData.reduce(
-        (sum, row) => sum + Number(row.amount),
+        (sum, row) =>
+          sum + Number(row.amount),
         0
       );
 
       setBudget(totalBudget);
     }
 
-    const { data: transactionData } = await supabase
-      .from("transactions")
-      .select("*")
-      .order("transaction_date", {
-        ascending: false,
-      });
+    const { data: transactionData } =
+      await supabase
+        .from("transactions")
+        .select("*")
+        .order("transaction_date", {
+          ascending: false,
+        });
 
     if (transactionData) {
       setTransactions(transactionData);
 
-      const totalExpense = transactionData.reduce(
-        (sum, row) => sum + Number(row.amount),
-        0
-      );
+      const totalExpense =
+        transactionData.reduce(
+          (sum, row) =>
+            sum + Number(row.amount),
+          0
+        );
 
       setExpense(totalExpense);
     }
@@ -110,7 +126,8 @@ function App() {
         .update({
           description,
           amount: Number(amount),
-          category_id: selectedCategory,
+          category_id:
+            selectedCategory,
         })
         .eq("id", editingId);
     } else {
@@ -136,11 +153,17 @@ function App() {
     loadData();
   }
 
-  function editTransaction(transaction) {
+  function editTransaction(
+    transaction
+  ) {
     setEditingId(transaction.id);
-    setDescription(transaction.description);
+    setDescription(
+      transaction.description
+    );
     setAmount(transaction.amount);
-    setSelectedCategory(transaction.category_id);
+    setSelectedCategory(
+      transaction.category_id
+    );
   }
 
   function clearForm() {
@@ -149,7 +172,9 @@ function App() {
     setAmount("");
   }
 
-  async function deleteTransaction(id) {
+  async function deleteTransaction(
+    id
+  ) {
     await supabase
       .from("transactions")
       .delete()
@@ -158,7 +183,33 @@ function App() {
     loadData();
   }
 
-  const remaining = budget - expense;
+  function editBudget(budget) {
+    setEditingBudget(budget);
+    setBudgetAmount(budget.amount);
+  }
+
+  function cancelBudgetEdit() {
+    setEditingBudget(null);
+    setBudgetAmount("");
+  }
+
+  async function saveBudget() {
+    if (!editingBudget) return;
+
+    await supabase
+      .from("budgets")
+      .update({
+        amount:
+          Number(budgetAmount),
+      })
+      .eq("id", editingBudget.id);
+
+    cancelBudgetEdit();
+    loadData();
+  }
+
+  const remaining =
+    budget - expense;
 
   return (
     <div className="dashboard">
@@ -170,25 +221,60 @@ function App() {
         remaining={remaining}
       />
 
-      <BudgetList budgets={budgets} />
+      <BudgetList
+        budgets={budgets}
+        editBudget={editBudget}
+      />
+
+      <BudgetForm
+        editingBudget={
+          editingBudget
+        }
+        budgetAmount={
+          budgetAmount
+        }
+        setBudgetAmount={
+          setBudgetAmount
+        }
+        saveBudget={saveBudget}
+        cancelBudgetEdit={
+          cancelBudgetEdit
+        }
+      />
 
       <TransactionForm
         editingId={editingId}
-        description={description}
-        setDescription={setDescription}
+        description={
+          description
+        }
+        setDescription={
+          setDescription
+        }
         amount={amount}
         setAmount={setAmount}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
+        selectedCategory={
+          selectedCategory
+        }
+        setSelectedCategory={
+          setSelectedCategory
+        }
         categories={categories}
-        saveTransaction={saveTransaction}
+        saveTransaction={
+          saveTransaction
+        }
         clearForm={clearForm}
       />
 
       <TransactionList
-        transactions={transactions}
-        editTransaction={editTransaction}
-        deleteTransaction={deleteTransaction}
+        transactions={
+          transactions
+        }
+        editTransaction={
+          editTransaction
+        }
+        deleteTransaction={
+          deleteTransaction
+        }
       />
     </div>
   );
