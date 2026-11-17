@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
+
+import DashboardCards from "./components/DashboardCards";
+import TransactionForm from "./components/TransactionForm";
+import TransactionList from "./components/TransactionList";
+import BudgetList from "./components/BudgetList";
+
 import "./App.css";
 
 function App() {
@@ -8,6 +14,7 @@ function App() {
   const [expense, setExpense] = useState(0);
 
   const [transactions, setTransactions] = useState([]);
+  const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const [description, setDescription] = useState("");
@@ -41,9 +48,22 @@ function App() {
 
     const { data: budgetData } = await supabase
       .from("budgets")
-      .select("amount");
+      .select("*");
 
-    if (budgetData?.length > 0) {
+    if (budgetData) {
+      const budgetsWithNames = budgetData.map((budgetRow) => {
+        const category = categoryData?.find(
+          (c) => c.id === budgetRow.category_id
+        );
+
+        return {
+          ...budgetRow,
+          categoryName: category?.name || "Okänd kategori",
+        };
+      });
+
+      setBudgets(budgetsWithNames);
+
       const totalBudget = budgetData.reduce(
         (sum, row) => sum + Number(row.amount),
         0
@@ -55,7 +75,9 @@ function App() {
     const { data: transactionData } = await supabase
       .from("transactions")
       .select("*")
-      .order("transaction_date", { ascending: false });
+      .order("transaction_date", {
+        ascending: false,
+      });
 
     if (transactionData) {
       setTransactions(transactionData);
@@ -74,7 +96,11 @@ function App() {
   }, []);
 
   async function saveTransaction() {
-    if (!description || !amount || !selectedCategory) {
+    if (
+      !description ||
+      !amount ||
+      !selectedCategory
+    ) {
       return;
     }
 
@@ -82,24 +108,28 @@ function App() {
       await supabase
         .from("transactions")
         .update({
-          description: description,
+          description,
           amount: Number(amount),
           category_id: selectedCategory,
         })
         .eq("id", editingId);
     } else {
-      await supabase.from("transactions").insert([
-        {
-          household_id:
-            "8b8621eb-0f2d-49fc-be1f-8338370a73a7",
-          category_id: selectedCategory,
-          transaction_date: new Date()
-            .toISOString()
-            .split("T")[0],
-          amount: Number(amount),
-          description: description,
-        },
-      ]);
+      await supabase
+        .from("transactions")
+        .insert([
+          {
+            household_id:
+              "8b8621eb-0f2d-49fc-be1f-8338370a73a7",
+            category_id:
+              selectedCategory,
+            transaction_date:
+              new Date()
+                .toISOString()
+                .split("T")[0],
+            amount: Number(amount),
+            description,
+          },
+        ]);
     }
 
     clearForm();
@@ -134,130 +164,32 @@ function App() {
     <div className="dashboard">
       <h1>{householdName}</h1>
 
-      <div className="cards">
-        <div className="card">
-          <h2>Budget</h2>
-          <h3>{budget.toLocaleString("sv-SE")} kr</h3>
-        </div>
+      <DashboardCards
+        budget={budget}
+        expense={expense}
+        remaining={remaining}
+      />
 
-        <div className="card">
-          <h2>Utfall</h2>
-          <h3>{expense.toLocaleString("sv-SE")} kr</h3>
-        </div>
+      <BudgetList budgets={budgets} />
 
-        <div className="card">
-          <h2>Kvar</h2>
-          <h3>{remaining.toLocaleString("sv-SE")} kr</h3>
-        </div>
-      </div>
+      <TransactionForm
+        editingId={editingId}
+        description={description}
+        setDescription={setDescription}
+        amount={amount}
+        setAmount={setAmount}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        categories={categories}
+        saveTransaction={saveTransaction}
+        clearForm={clearForm}
+      />
 
-      <div className="card" style={{ marginTop: "20px" }}>
-        <h2>
-          {editingId
-            ? "Redigera transaktion"
-            : "Ny transaktion"}
-        </h2>
-
-        <input
-          placeholder="Beskrivning"
-          value={description}
-          onChange={(e) =>
-            setDescription(e.target.value)
-          }
-        />
-
-        <br />
-        <br />
-
-        <input
-          placeholder="Belopp"
-          value={amount}
-          onChange={(e) =>
-            setAmount(e.target.value)
-          }
-        />
-
-        <br />
-        <br />
-
-        <select
-          value={selectedCategory}
-          onChange={(e) =>
-            setSelectedCategory(e.target.value)
-          }
-        >
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-
-        <br />
-        <br />
-
-        <button onClick={saveTransaction}>
-          {editingId ? "Uppdatera" : "Spara"}
-        </button>
-
-        {editingId && (
-          <>
-            <br />
-            <br />
-            <button onClick={clearForm}>
-              Avbryt
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="card" style={{ marginTop: "20px" }}>
-        <h2>Senaste transaktioner</h2>
-
-        {transactions.map((t) => (
-          <div
-            key={t.id}
-            style={{
-              padding: "10px 0",
-              borderBottom: "1px solid #ddd",
-            }}
-          >
-            <strong>{t.description}</strong>
-
-            <br />
-
-            {Number(t.amount).toLocaleString(
-              "sv-SE"
-            )}{" "}
-            kr
-
-            <br />
-
-            {t.transaction_date}
-
-            <br />
-            <br />
-
-            <button
-              onClick={() =>
-                editTransaction(t)
-              }
-            >
-              Redigera
-            </button>
-
-            {"  "}
-
-            <button
-              onClick={() =>
-                deleteTransaction(t.id)
-              }
-            >
-              Ta bort
-            </button>
-          </div>
-        ))}
-      </div>
+      <TransactionList
+        transactions={transactions}
+        editTransaction={editTransaction}
+        deleteTransaction={deleteTransaction}
+      />
     </div>
   );
 }
