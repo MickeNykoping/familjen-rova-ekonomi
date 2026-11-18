@@ -35,6 +35,7 @@ function LopandeUtgifter() {
       await supabase
         .from("expense_rows")
         .select("*")
+        .order("expense_group")
         .order("sort_order");
 
     const { data: expenseData } =
@@ -50,6 +51,8 @@ function LopandeUtgifter() {
       setMonthlyExpenses(expenseData);
     }
   }
+
+  let currentGroup = "";
 
   return (
     <div
@@ -111,6 +114,15 @@ function LopandeUtgifter() {
 
           <tbody>
             {rows.map((row) => {
+              const showGroup =
+                row.expense_group !==
+                currentGroup;
+
+              if (showGroup) {
+                currentGroup =
+                  row.expense_group;
+              }
+
               const yearlyTotal =
                 monthlyExpenses
                   .filter(
@@ -128,74 +140,98 @@ function LopandeUtgifter() {
                   );
 
               return (
-                <tr key={row.id}>
-                  <td
-                    style={{
-                      padding:
-                        "8px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #ddd",
-                    }}
-                  >
-                    {row.name}
-                  </td>
-
-                  {months.map(
-                    (month) => {
-                      const expense =
-                        monthlyExpenses.find(
-                          (e) =>
-                            e.expense_name ===
-                              row.name &&
-                            e.month ===
-                              month
-                        );
-
-                      return (
-                        <td
-                          key={
-                            month
-                          }
-                          style={{
-                            textAlign:
-                              "center",
-                            borderBottom:
-                              "1px solid #ddd",
-                          }}
-                        >
-                          {expense
-                            ? Number(
-                                expense.amount
-                              ).toLocaleString(
-                                "sv-SE"
-                              )
-                            : "-"}
-                        </td>
-                      );
-                    }
+                <tbody key={row.id}>
+                  {showGroup && (
+                    <tr>
+                      <td
+                        colSpan={14}
+                        style={{
+                          background:
+                            "#e8edf5",
+                          fontWeight:
+                            "bold",
+                          padding:
+                            "12px",
+                          fontSize:
+                            "1.1rem",
+                          borderTop:
+                            "2px solid #d0d7e2",
+                        }}
+                      >
+                        {row.expense_group.toUpperCase()}
+                      </td>
+                    </tr>
                   )}
 
-                  <td
-                    style={{
-                      textAlign:
-                        "right",
-                      fontWeight:
-                        "bold",
-                      background:
-                        "#fafafa",
-                      borderBottom:
-                        "1px solid #ddd",
-                      padding:
-                        "8px",
-                    }}
-                  >
-                    {yearlyTotal.toLocaleString(
-                      "sv-SE"
+                  <tr>
+                    <td
+                      style={{
+                        padding:
+                          "8px",
+                        textAlign:
+                          "left",
+                        borderBottom:
+                          "1px solid #ddd",
+                      }}
+                    >
+                      {row.name}
+                    </td>
+
+                    {months.map(
+                      (month) => {
+                        const expense =
+                          monthlyExpenses.find(
+                            (e) =>
+                              e.expense_name ===
+                                row.name &&
+                              e.month ===
+                                month
+                          );
+
+                        return (
+                          <td
+                            key={
+                              month
+                            }
+                            style={{
+                              textAlign:
+                                "center",
+                              borderBottom:
+                                "1px solid #ddd",
+                            }}
+                          >
+                            {expense
+                              ? Number(
+                                  expense.amount
+                                ).toLocaleString(
+                                  "sv-SE"
+                                )
+                              : "-"}
+                          </td>
+                        );
+                      }
                     )}
-                  </td>
-                </tr>
+
+                    <td
+                      style={{
+                        textAlign:
+                          "right",
+                        fontWeight:
+                          "bold",
+                        background:
+                          "#fafafa",
+                        borderBottom:
+                          "1px solid #ddd",
+                        padding:
+                          "8px",
+                      }}
+                    >
+                      {yearlyTotal.toLocaleString(
+                        "sv-SE"
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
               );
             })}
           </tbody>
