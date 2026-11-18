@@ -5,6 +5,7 @@ import BudgetSummary from "./components/BudgetSummary";
 import TransactionForm from "./components/TransactionForm";
 import TransactionList from "./components/TransactionList";
 import LopandeUtgifter from "./components/LopandeUtgifter";
+import SkulderLan from "./components/SkulderLan";
 
 import { useAppData } from "./hooks/useAppData";
 
@@ -24,6 +25,8 @@ function App() {
       />
 
       <LopandeUtgifter />
+
+      <SkulderLan />
 
       <BudgetList
         budgets={app.budgets}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 function LopandeUtgifter() {
@@ -110,6 +110,10 @@ function LopandeUtgifter() {
                   textAlign: "left",
                   padding: "10px",
                   minWidth: "250px",
+                  position: "sticky",
+                  left: 0,
+                  background: "#ffffff",
+                  zIndex: 100,
                 }}
               >
                 Utgift
@@ -141,16 +145,16 @@ function LopandeUtgifter() {
 
           <tbody>
             {groups.map((group) => {
-              const groupRows =
-                rows.filter(
-                  (r) =>
-                    r.expense_group ===
-                    group
-                );
+              const groupRows = rows.filter(
+                (r) =>
+                  r.expense_group === group
+              );
 
               return (
-                <>
-                  <tr key={group}>
+                <React.Fragment
+                  key={group}
+                >
+                  <tr>
                     <td
                       colSpan={14}
                       style={{
@@ -172,9 +176,7 @@ function LopandeUtgifter() {
 
                   {groupRows.map(
                     (row) => (
-                      <tr
-                        key={row.id}
-                      >
+                      <tr key={row.id}>
                         <td
                           style={{
                             padding:
@@ -183,22 +185,24 @@ function LopandeUtgifter() {
                               "left",
                             borderBottom:
                               "1px solid #ddd",
+                            position:
+                              "sticky",
+                            left: 0,
+                            background:
+                              "#ffffff",
+                            zIndex: 10,
+                            minWidth:
+                              "250px",
                           }}
                         >
-                          {
-                            row.name
-                          }
+                          {row.name}
                         </td>
 
                         {months.map(
-                          (
-                            month
-                          ) => {
+                          (month) => {
                             const expense =
                               monthlyExpenses.find(
-                                (
-                                  e
-                                ) =>
+                                (e) =>
                                   e.expense_name ===
                                     row.name &&
                                   e.month ===
@@ -290,7 +294,7 @@ function LopandeUtgifter() {
                       )}
                     </td>
                   </tr>
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>
