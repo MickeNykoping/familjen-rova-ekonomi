@@ -52,7 +52,35 @@ function LopandeUtgifter() {
     }
   }
 
-  let currentGroup = "";
+  const groups = [
+    ...new Set(
+      rows.map((r) => r.expense_group)
+    ),
+  ];
+
+  function rowTotal(name) {
+    return monthlyExpenses
+      .filter(
+        (e) => e.expense_name === name
+      )
+      .reduce(
+        (sum, e) =>
+          sum + Number(e.amount),
+        0
+      );
+  }
+
+  function groupTotal(group) {
+    const groupRows = rows.filter(
+      (r) => r.expense_group === group
+    );
+
+    return groupRows.reduce(
+      (sum, row) =>
+        sum + rowTotal(row.name),
+      0
+    );
+  }
 
   return (
     <div
@@ -103,8 +131,7 @@ function LopandeUtgifter() {
                 style={{
                   minWidth: "100px",
                   padding: "10px",
-                  background:
-                    "#f3f3f3",
+                  background: "#f3f3f3",
                 }}
               >
                 År
@@ -113,125 +140,157 @@ function LopandeUtgifter() {
           </thead>
 
           <tbody>
-            {rows.map((row) => {
-              const showGroup =
-                row.expense_group !==
-                currentGroup;
-
-              if (showGroup) {
-                currentGroup =
-                  row.expense_group;
-              }
-
-              const yearlyTotal =
-                monthlyExpenses
-                  .filter(
-                    (e) =>
-                      e.expense_name ===
-                      row.name
-                  )
-                  .reduce(
-                    (sum, e) =>
-                      sum +
-                      Number(
-                        e.amount
-                      ),
-                    0
-                  );
+            {groups.map((group) => {
+              const groupRows =
+                rows.filter(
+                  (r) =>
+                    r.expense_group ===
+                    group
+                );
 
               return (
-                <tbody key={row.id}>
-                  {showGroup && (
-                    <tr>
-                      <td
-                        colSpan={14}
-                        style={{
-                          background:
-                            "#e8edf5",
-                          fontWeight:
-                            "bold",
-                          padding:
-                            "12px",
-                          fontSize:
-                            "1.1rem",
-                          borderTop:
-                            "2px solid #d0d7e2",
-                        }}
+                <>
+                  <tr key={group}>
+                    <td
+                      colSpan={14}
+                      style={{
+                        background:
+                          "#e8edf5",
+                        fontWeight:
+                          "bold",
+                        padding:
+                          "12px",
+                        fontSize:
+                          "1.1rem",
+                        borderTop:
+                          "2px solid #d0d7e2",
+                      }}
+                    >
+                      {group.toUpperCase()}
+                    </td>
+                  </tr>
+
+                  {groupRows.map(
+                    (row) => (
+                      <tr
+                        key={row.id}
                       >
-                        {row.expense_group.toUpperCase()}
-                      </td>
-                    </tr>
+                        <td
+                          style={{
+                            padding:
+                              "8px",
+                            textAlign:
+                              "left",
+                            borderBottom:
+                              "1px solid #ddd",
+                          }}
+                        >
+                          {
+                            row.name
+                          }
+                        </td>
+
+                        {months.map(
+                          (
+                            month
+                          ) => {
+                            const expense =
+                              monthlyExpenses.find(
+                                (
+                                  e
+                                ) =>
+                                  e.expense_name ===
+                                    row.name &&
+                                  e.month ===
+                                    month
+                              );
+
+                            return (
+                              <td
+                                key={
+                                  month
+                                }
+                                style={{
+                                  textAlign:
+                                    "center",
+                                  borderBottom:
+                                    "1px solid #ddd",
+                                }}
+                              >
+                                {expense
+                                  ? Number(
+                                      expense.amount
+                                    ).toLocaleString(
+                                      "sv-SE"
+                                    )
+                                  : "-"}
+                              </td>
+                            );
+                          }
+                        )}
+
+                        <td
+                          style={{
+                            textAlign:
+                              "right",
+                            fontWeight:
+                              "bold",
+                            background:
+                              "#fafafa",
+                            borderBottom:
+                              "1px solid #ddd",
+                            padding:
+                              "8px",
+                          }}
+                        >
+                          {rowTotal(
+                            row.name
+                          ).toLocaleString(
+                            "sv-SE"
+                          )}
+                        </td>
+                      </tr>
+                    )
                   )}
 
                   <tr>
                     <td
+                      colSpan={13}
                       style={{
-                        padding:
-                          "8px",
+                        fontWeight:
+                          "bold",
                         textAlign:
-                          "left",
-                        borderBottom:
-                          "1px solid #ddd",
+                          "right",
+                        padding:
+                          "10px",
+                        background:
+                          "#f5f5f5",
                       }}
                     >
-                      {row.name}
+                      SUMMA{" "}
+                      {group.toUpperCase()}
                     </td>
-
-                    {months.map(
-                      (month) => {
-                        const expense =
-                          monthlyExpenses.find(
-                            (e) =>
-                              e.expense_name ===
-                                row.name &&
-                              e.month ===
-                                month
-                          );
-
-                        return (
-                          <td
-                            key={
-                              month
-                            }
-                            style={{
-                              textAlign:
-                                "center",
-                              borderBottom:
-                                "1px solid #ddd",
-                            }}
-                          >
-                            {expense
-                              ? Number(
-                                  expense.amount
-                                ).toLocaleString(
-                                  "sv-SE"
-                                )
-                              : "-"}
-                          </td>
-                        );
-                      }
-                    )}
 
                     <td
                       style={{
-                        textAlign:
-                          "right",
                         fontWeight:
                           "bold",
+                        textAlign:
+                          "right",
                         background:
-                          "#fafafa",
-                        borderBottom:
-                          "1px solid #ddd",
+                          "#f5f5f5",
                         padding:
-                          "8px",
+                          "10px",
                       }}
                     >
-                      {yearlyTotal.toLocaleString(
+                      {groupTotal(
+                        group
+                      ).toLocaleString(
                         "sv-SE"
                       )}
                     </td>
                   </tr>
-                </tbody>
+                </>
               );
             })}
           </tbody>
